@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
+const mongoose = require('mongoose');
 const Reminder = require('../models/Reminder');
 
 // Email transporter
@@ -110,6 +111,12 @@ const getNextOccurrence = (currentTime, pattern) => {
 // Check and send due reminders
 const checkAndSendReminders = async () => {
   try {
+    // Avoid buffering timeouts when MongoDB is not connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⏭️  Skipping reminder check (MongoDB not connected yet)');
+      return;
+    }
+
     // Get current time in IST
     const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const oneHourFromNow = new Date(nowIST.getTime() + 60*60*1000);

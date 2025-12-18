@@ -28,10 +28,25 @@ app.use((req, res, next) => {
   next();
 });
 
+const startReminderCron = () => {
+  cron.schedule('* * * * *', () => {
+    console.log('🔔 Checking for reminders...');
+    checkAndSendReminders();
+  });
+};
+
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/helperbuddy')
-  .then(() => console.log('✅ Connected to MongoDB'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+if (!process.env.MONGODB_URI) {
+  console.warn('⚠️  MONGODB_URI is not set. Backend will try localhost:27017 and likely fail in Docker/EC2.');
+}
+
+mongoose
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/helperbuddy')
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    startReminderCron();
+  })
+  .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -42,12 +57,6 @@ app.use('/api/reminders', reminderRoutes);
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'HelperBuddy API is running!' });
-});
-
-// Schedule reminder check every minute
-cron.schedule('* * * * *', () => {
-  console.log('🔔 Checking for reminders...');
-  checkAndSendReminders();
 });
 
 const PORT = process.env.PORT || 5000;
