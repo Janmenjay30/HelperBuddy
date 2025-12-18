@@ -1,0 +1,48 @@
+# Define all services (containers)
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:7
+    container_name: helperbuddy-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - helperbuddy-network
+
+  # Backend API Service
+  backend:
+    build: ./backend
+    container_name: helperbuddy-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mongodb
+    networks:
+      - helperbuddy-network
+
+  # Frontend React Service
+  frontend:
+    build: ./frontend
+    container_name: helperbuddy-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - helperbuddy-network
+
+# Persistent volume for MongoDB data
+volumes:
+  mongodb_data:
+
+# Network for container communication
+networks:
+  helperbuddy-network:
+    driver: bridge
