@@ -112,10 +112,26 @@ const checkAndSendReminders = async () => {
   try {
     // Get current time in IST
     const nowIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const oneHourFromNow = new Date(nowIST.getTime() + 60*60*1000);
+    
+    // Early exit: Check if there are any pending reminders in the next hour
+    const upcomingCount = await Reminder.countDocuments({
+      status: 'pending',
+      scheduledTime: {
+        $lte: oneHourFromNow
+      }
+    });
+    
+    if (upcomingCount === 0) {
+      console.log('⏭️  No pending reminders in next hour, skipping check...');
+      return;
+    }
+    
     const oneMinuteAgo = new Date(nowIST.getTime() - 60000);
 
     console.log(`🔔 Checking for reminders...`);
     console.log(`   Current time (IST): ${nowIST.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+    console.log(`   Upcoming reminders in next hour: ${upcomingCount}`);
     console.log(`   Looking for reminders between: ${oneMinuteAgo.toLocaleString('en-IN')} and ${nowIST.toLocaleString('en-IN')}`);
 
     // Show all pending reminders for debugging
